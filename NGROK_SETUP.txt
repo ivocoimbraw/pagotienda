@@ -1,0 +1,151 @@
+# Configuración de ngrok para PagoFácil Callback
+
+## ¿Por qué necesitas ngrok?
+
+PagoFácil necesita enviar notificaciones (callbacks) a tu aplicación cuando un pago se completa. 
+Como estás en desarrollo local (localhost), PagoFácil no puede acceder a tu servidor. 
+ngrok crea un túnel público que redirige el tráfico a tu localhost.
+
+## Paso 1: Instalar ngrok
+
+### Opción A: Descarga directa
+1. Ve a: https://ngrok.com/download
+2. Descarga ngrok para tu sistema operativo
+3. Extrae el archivo y muévelo a una ubicación en tu PATH
+
+### Opción B: Usando gestor de paquetes (Linux)
+```bash
+# Debian/Ubuntu
+curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
+  sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && \
+  echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
+  sudo tee /etc/apt/sources.list.d/ngrok.list && \
+  sudo apt update && sudo apt install ngrok
+
+# O descarga directa
+wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+tar -xvzf ngrok-v3-stable-linux-amd64.tgz
+sudo mv ngrok /usr/local/bin/
+```
+
+## Paso 2: Autenticar ngrok (Opcional pero recomendado)
+
+1. Crea una cuenta gratuita en: https://dashboard.ngrok.com/signup
+2. Obtén tu authtoken desde: https://dashboard.ngrok.com/get-started/your-authtoken
+3. Ejecuta:
+```bash
+ngrok authtoken TU_TOKEN_AQUI
+```
+
+## Paso 3: Iniciar el túnel ngrok
+
+En una terminal separada, ejecuta:
+
+```bash
+ngrok http 8000
+```
+
+Deberías ver algo como:
+
+```
+Session Status                online
+Account                       tu_cuenta (Plan: Free)
+Version                       3.x.x
+Region                        United States (us)
+Web Interface                 http://127.0.0.1:4040
+Forwarding                    https://abc123.ngrok.io -> http://localhost:8000
+                              
+Connections                   ttl     opn     rt1     rt5     p50     p90
+                              0       0       0.00    0.00    0.00    0.00
+```
+
+## Paso 4: Copiar la URL de ngrok
+
+Copia la URL "Forwarding" (ejemplo: `https://abc123.ngrok.io`)
+
+## Paso 5: Actualizar tu .env
+
+Abre el archivo `.env` y actualiza la variable `APP_URL`:
+
+```env
+APP_URL=https://abc123.ngrok.io
+```
+
+**IMPORTANTE:** ⚠️ Esta URL cambia cada vez que reinicias ngrok (en plan gratuito). 
+Necesitarás actualizarla en `.env` cada vez.
+
+## Paso 6: Verificar que funciona
+
+1. Reinicia el servidor Laravel:
+```bash
+php artisan serve
+```
+
+2. Accede a tu aplicación usando la URL de ngrok:
+```
+https://abc123.ngrok.io/pago
+```
+
+3. Tu callback URL será automáticamente:
+```
+https://abc123.ngrok.io/pagofacil/callback
+```
+
+## Paso 7: Probar el pago
+
+1. Genera un QR desde tu aplicación
+2. PagoFacil podrá enviar notificaciones a tu callback
+3. Verifica los logs en Laravel para ver las notificaciones:
+
+```bash
+tail -f storage/logs/laravel.log
+```
+
+## Consola Web de ngrok
+
+Para ver todas las peticiones HTTP que llegan a tu túnel, abre:
+```
+http://127.0.0.1:4040
+```
+
+Aquí podrás ver en tiempo real cuando PagoFácil envía callbacks a tu aplicación.
+
+## Troubleshooting
+
+### Error: "command not found: ngrok"
+- Verifica que ngrok esté en tu PATH
+- Intenta usar la ruta completa: `/usr/local/bin/ngrok http 8000`
+
+### La URL de ngrok no funciona
+- Verifica que el servidor Laravel esté corriendo en el puerto 8000
+- Asegúrate de haber actualizado APP_URL en el .env
+- Reinicia el servidor Laravel después de cambiar el .env
+
+### PagoFácil no envía callbacks
+- Verifica en la consola de ngrok (http://127.0.0.1:4040) si llegan peticiones
+- Revisa los logs de Laravel: `tail -f storage/logs/laravel.log`
+- Asegúrate de que APP_URL en .env tenga la URL correcta de ngrok
+
+## Plan Gratuito vs Pago
+
+**Plan Gratuito:**
+- ✅ Perfecto para desarrollo
+- ⚠️ URL cambia cada vez que reinicias
+- ⚠️ Sesión de 2 horas máximo
+- ⚠️ Límite de 40 conexiones/minuto
+
+**Plan Pago:**
+- ✅ URL fija (subdomain personalizado)
+- ✅ Sin límite de tiempo
+- ✅ Más conexiones simultáneas
+
+Para desarrollo, el plan gratuito es suficiente.
+
+## Alternativas a ngrok
+
+Si prefieres otra herramienta:
+- **localtunnel**: `npx localtunnel --port 8000`
+- **serveo**: `ssh -R 80:localhost:8000 serveo.net`
+- **cloudflared**: Túnel de Cloudflare
+
+Todas funcionan de manera similar. Solo actualiza `APP_URL` en `.env` con la URL que te proporcionen.
