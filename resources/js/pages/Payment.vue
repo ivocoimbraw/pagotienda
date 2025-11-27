@@ -27,6 +27,8 @@ const error = ref('');
 const paymentCompleted = ref(false);
 let statusCheckInterval: number | null = null;
 
+const baseUrl = (window as any).Laravel?.baseUrl || '';
+
 // Añadir item de ejemplo
 const addSampleItem = () => {
     const total = Number(form.value.monto) || 0.1;
@@ -55,7 +57,7 @@ const createPayment = async () => {
     addSampleItem();
 
     try {
-        const response = await fetch('/pago/crear', {
+        const response = await fetch(`${baseUrl}/pago/crear`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -85,7 +87,7 @@ const checkStatus = async () => {
     if (!idTransaccion.value) return;
 
     try {
-        const response = await fetch(`/pago/estado/${idTransaccion.value}`);
+        const response = await fetch(`${baseUrl}/pago/estado/${idTransaccion.value}`);
         const data = await response.json();
 
         if (data.status === 'paid') {
