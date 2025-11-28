@@ -71,7 +71,7 @@ class PagoFacilService
                     'phoneNumber' => $data['telefono'],
                     'email' => $data['email'],
                     'paymentNumber' => $data['numero_pedido'],
-                    'amount' => $data['monto'],
+                    'amount' => 0.1,
                     'currency' => 2, // BOB
                     'clientCode' => $data['client_code'] ?? '00001',
                     'callbackUrl' => $callbackUrl,
